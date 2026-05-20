@@ -57,30 +57,50 @@ def formatear_moneda(valor):
                                                                                         # reemplazar la X, sustituye los . por ,
                                                                                         # y las X por .
 
+
+def guardar_informe(datos, ruta):
+
+    """Guarda un diccionario en formato JSON."""
+    with open(ruta, 'w', encoding='utf-8') as archivo:
+        json.dump(datos, archivo, indent=2, ensure_ascii=False)
+
+    
 def main():
     ventas = cargar_ventas("ventas.json")
-    
-    print("============================")
-    print("   INFORME DE VENTAS")
-    print("============================")
-    print(f"\nTotal de ventas: {len(ventas)}")
+    informe = "============================\n   INFORME DE VENTAS\n============================"
+    informe +=f"\nTotal de ventas: {len(ventas)}"
     
     ingresos_totales = sum(calcular_total_venta(v) for v in ventas)
-    print(f"Ingresos totales: {formatear_moneda(ingresos_totales)}")
+    informe +=f"\nIngresos totales: {formatear_moneda(ingresos_totales)}"
     
     print("\n--- Por categoría ---")
     for cat, total in ventas_por_categoria(ventas).items():
         # Alineamos el texto a la izquierda (<12) y el número a la derecha (>11)
-        print(f"{cat + ':':<12} {formatear_moneda(total):>11}") # La reserva de caracteres es algo totalmente nuevo para mí.
+        informe+=f"\n{cat + ':':<12} {formatear_moneda(total):>11}" # La reserva de caracteres es algo totalmente nuevo para mí.
         
     prod, max_ingreso = producto_mas_vendido(ventas)
-    print(f"\nProducto más rentable: {prod} ({formatear_moneda(max_ingreso)})")
+    informe+=f"\n\nProducto más rentable: {prod} ({formatear_moneda(max_ingreso)})"
     
     fecha_busqueda = "2026-01-16"
-    fecha_str = datetime.strptime(fecha_busqueda, "%Y-%m-%d").strftime("%d/%m/%Y")
-    print(f"\n--- Ventas del {fecha_str} ---")
+    fecha_str = datetime.strptime(fecha_busqueda, "%Y-%m-%d").strftime("%d/%m/%Y") # Convierte la fecha en el dato 'datetime' y luego
+                                                                                    #vuelve a convertirlo en string ocn un orden distinto. 
+    informe+=f"\n\n--- Ventas del {fecha_str} ---"
     for venta in ventas_en_fecha(ventas, fecha_busqueda):
-        print(f"- {venta['producto']}: {formatear_moneda(calcular_total_venta(venta))}")
+        informe+=f"\n- {venta['producto']+':':<10} {formatear_moneda(calcular_total_venta(venta)):>11}"
+
+
+    print(informe)
+    
+    # Para no complicarnos la vida, simplificaremos el informe a unos datos con la ayuda 
+    # de los datos extraidos antes de convertirlo en un sólo string
+    datos_json = {
+        "generado_en": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "total_ventas": len(ventas),
+        "ingresos_totales": round(ingresos_totales, 2),
+        "por_categoria": {cat: round(total, 2) for cat, total in ventas_por_categoria(ventas).items()},
+        "producto_top": prod
+    }
+    guardar_informe(datos_json, "informe.json")
 
 # Bloque de prueba
 if __name__ == "__main__":
